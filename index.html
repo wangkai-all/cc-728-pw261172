@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>矿物样品成分分析 · 对数比距离与分组</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div>
+        <h1>矿物样品成分分析</h1>
+        <p>
+          比较的是成分间的<strong>配方关系</strong>而非绝对称样量：读数基于等距对数比（CLR）计算
+          Aitchison 距离与聚类，整组读数同乘任意倍数结果不变。原始零值按
+          <em>确零 / 低于检测限（BDL）/ 缺失</em>三类分别处理，分析侧不覆盖原始测量。
+        </p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button">切换暗色</button>
+    </header>
+
+    <!-- 控制行：参数变化时整条分析管线从零重建 -->
+    <div class="control-bar" role="region" aria-label="分析参数">
+      <div class="control-group">
+        <span class="control-label">BDL 替换倍数 δ</span>
+        <div class="seg" id="multiplierSeg" role="group" aria-label="BDL 替换倍数"></div>
+        <input type="number" id="customMultiplier" min="0.01" step="0.05" placeholder="自定义" aria-label="自定义替换倍数" />
+      </div>
+      <div class="control-group">
+        <span class="control-label">簇数 k</span>
+        <select id="kSelect" class="k-select" aria-label="聚类簇数"></select>
+      </div>
+      <div class="control-group">
+        <span class="control-label">保留成分</span>
+        <span id="componentChips" style="display:inline-flex;gap:6px;flex-wrap:wrap;"></span>
+      </div>
+      <button class="theme-toggle" id="resetBtn" type="button">重置参数</button>
+    </div>
+
+    <!-- 尺度不变性自检 -->
+    <div class="section-title">尺度不变性自检（当前参数实时计算）</div>
+    <div class="invariant-row" id="invariantRow"></div>
+
+    <!-- 数据管理：原始测量（只读） -->
+    <div class="section-title">① 数据管理 · 原始测量（分析端不覆盖）</div>
+    <div class="card">
+      <h2>样品与读数</h2>
+      <p class="subtitle">
+        保留单位、检测限与处理前值。徽章区分
+        <span class="status-badge status-measured">实测</span>
+        <span class="status-badge status-bdl">BDL</span>
+        <span class="status-badge status-zero">确零</span>
+        <span class="status-badge status-missing">缺失</span>
+        ；点击任意两行样品可查看成分级差异。
+      </p>
+      <div class="table-scroll" id="rawTable"></div>
+    </div>
+
+    <!-- 分组与距离 -->
+    <div class="section-title">② 支持集合分组 · Aitchison 距离与聚类</div>
+    <div id="groupNotice"></div>
+    <div class="group-tabs" id="groupTabs" role="tablist" aria-label="支持集合组"></div>
+    <div class="card">
+      <h2 id="groupTitle">组分析</h2>
+      <p class="subtitle" id="groupSubtitle"></p>
+      <div class="grid-2">
+        <div>
+          <p class="panel-title">UPGMA 聚类树（高度 = 合并距离）</p>
+          <div class="chart-box" id="dendrogram"></div>
+          <div class="legend" id="clusterLegend"></div>
+        </div>
+        <div>
+          <p class="panel-title">距离热图（点击单元格选样品对）</p>
+          <div class="chart-box" id="heatmap"></div>
+        </div>
+      </div>
+      <hr class="soft" />
+      <div class="grid-2">
+        <div>
+          <p class="panel-title">PCoA 主坐标（距离结构的二维嵌入）</p>
+          <div class="chart-box" id="pcoa"></div>
+        </div>
+        <div>
+          <p class="panel-title">组内样品（点击两两比较）</p>
+          <div class="table-scroll" id="groupTable"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 成对比较 -->
+    <div class="section-title">③ 成对比较 · 哪些成分比例拉开了差异</div>
+    <div class="card" id="pairCard">
+      <h2>样品对分析</h2>
+      <div class="control-group" style="margin-bottom:12px;">
+        <span class="control-label">跨组快速选择</span>
+        <select id="pairSelectA" aria-label="样品 A"></select>
+        <span class="control-label">↔</span>
+        <select id="pairSelectB" aria-label="样品 B"></select>
+      </div>
+      <div id="pairBody">
+        <p class="empty-note">在上方热图、样品表或数据管理表中选择两份样品，也可用上方下拉框跨支持集合选择。</p>
+      </div>
+    </div>
+
+    <!-- 替换量稳定性 -->
+    <div class="section-title">④ 替换量稳定性 · 分组是否随 δ 漂移</div>
+    <div class="card">
+      <h2>多倍数交叉验证</h2>
+      <p class="subtitle">
+        在 δ ∈ {0.25, 0.5, 0.65, 1.0} 下各重建一次完整管线，比较距离序（Spearman）、
+        分组划分（调整兰德指数 ARI）与逐样品对距离的变异系数（CV）。
+      </p>
+      <div id="stabilityBody"></div>
+    </div>
+
+    <p class="footer-note">
+      方法说明：BDL 读数按「检测限 × δ」做小量替换后，对支持成分重新闭合到总和 1，再做 CLR；
+      确零成分进入样品的支持集合判定，不同支持集合分开比较，绝不统一加常数混入同一总榜；
+      缺失读数不参与任何替换。删除成分时仅在保留成分间重新闭合并重算全部距离。
+      Aitchison 距离 d<sub>A</sub> = ‖clr(x) − clr(y)‖₂，天然满足尺度不变性。
+    </p>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

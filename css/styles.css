@@ -1,0 +1,287 @@
+/* 矿物样品成分分析 — 设计令牌（dataviz 参考调色板，明/暗各自选定） */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface-1: #fcfcfb;
+  --surface-2: #f3f2ee;
+  --ink-primary: #0b0b0b;
+  --ink-secondary: #52514e;
+  --ink-muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+  --accent: #2a78d6;
+  --accent-soft: rgba(42, 120, 214, 0.10);
+  --neg: #2a78d6;
+  --pos: #e34948;
+  --good: #006300;
+  --warning: #b07400;
+  --critical: #c0392b;
+  --chip-bg: #efeee9;
+  --shadow: 0 1px 3px rgba(11, 11, 11, 0.08);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface-1: #1a1a19;
+  --surface-2: #232322;
+  --ink-primary: #f0efec;
+  --ink-secondary: #c3c2b7;
+  --ink-muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.10);
+  --accent: #3987e5;
+  --accent-soft: rgba(57, 135, 229, 0.16);
+  --neg: #5aa0ec;
+  --pos: #e66767;
+  --good: #0ca30c;
+  --warning: #fab219;
+  --critical: #e66767;
+  --chip-bg: #2c2c2a;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink-primary);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.app { max-width: 1280px; margin: 0 auto; padding: 0 24px 64px; }
+
+/* ---- 顶栏 ---- */
+.app-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 0 12px;
+  flex-wrap: wrap;
+}
+.app-header h1 { font-size: 22px; margin: 0 0 4px; font-weight: 650; }
+.app-header p { margin: 0; color: var(--ink-secondary); font-size: 13px; max-width: 720px; }
+.theme-toggle {
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--ink-secondary);
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+.theme-toggle:hover { color: var(--ink-primary); }
+
+/* ---- 控制行（过滤/参数在一行，作用于下方全部内容） ---- */
+.control-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  padding: 12px 16px;
+  margin: 8px 0 20px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.control-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.control-label { font-size: 12px; color: var(--ink-muted); font-weight: 600; letter-spacing: 0.02em; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button {
+  border: 0;
+  background: var(--surface-1);
+  color: var(--ink-secondary);
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+}
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed='true'] { background: var(--accent); color: #fff; font-weight: 600; }
+.seg button:hover:not([aria-pressed='true']) { background: var(--surface-2); }
+input[type='number'], select {
+  background: var(--surface-1);
+  color: var(--ink-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font: inherit;
+  width: 88px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--ink-secondary);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.chip[aria-pressed='false'] { opacity: 0.45; text-decoration: line-through; }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+.control-hint { font-size: 12px; color: var(--ink-muted); }
+
+/* ---- 卡片与区块 ---- */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow);
+}
+.card h2 { font-size: 16px; margin: 0 0 4px; font-weight: 650; }
+.card .subtitle { margin: 0 0 14px; font-size: 13px; color: var(--ink-secondary); }
+.section-title { font-size: 13px; font-weight: 650; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 26px 0 10px; }
+
+/* ---- 不变性校验条 ---- */
+.invariant-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.stat-tile {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.stat-tile .label { font-size: 12px; color: var(--ink-muted); margin-bottom: 6px; }
+.stat-tile .value { font-size: 26px; font-weight: 650; }
+.stat-tile .note { font-size: 12px; color: var(--ink-secondary); margin-top: 4px; }
+.stat-tile.ok .value { color: var(--good); }
+.stat-tile.warn .value { color: var(--warning); }
+
+/* ---- 表格 ---- */
+.table-scroll { overflow-x: auto; }
+table.data { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.data th, table.data td {
+  padding: 7px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--grid);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+table.data th { color: var(--ink-muted); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--surface-1); }
+table.data th:first-child, table.data td:first-child,
+table.data th:nth-child(2), table.data td:nth-child(2) { text-align: left; }
+table.data tr.selectable { cursor: pointer; }
+table.data tr.selectable:hover { background: var(--surface-2); }
+table.data tr.selected { background: var(--accent-soft); }
+table.data tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+
+.status-badge {
+  display: inline-block;
+  border-radius: 6px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.status-measured { background: var(--chip-bg); color: var(--ink-secondary); }
+.status-bdl { background: rgba(237, 161, 0, 0.16); color: var(--warning); }
+.status-zero { background: rgba(192, 57, 43, 0.13); color: var(--critical); }
+.status-missing { background: var(--surface-2); color: var(--ink-muted); border: 1px dashed var(--axis); }
+.cell-sub { display: block; font-size: 11px; color: var(--ink-muted); }
+
+/* ---- 组标签页 ---- */
+.group-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.group-tab {
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--ink-secondary);
+  border-radius: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.group-tab[aria-selected='true'] { border-color: var(--accent); background: var(--accent-soft); color: var(--ink-primary); }
+.group-tab .gt-title { font-weight: 650; font-size: 13px; }
+.group-tab .gt-meta { font-size: 11px; color: var(--ink-muted); margin-top: 2px; }
+
+.grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 980px) { .grid-2 { grid-template-columns: 1fr; } }
+.panel-title { font-size: 13px; font-weight: 650; color: var(--ink-secondary); margin: 0 0 8px; }
+.chart-box { overflow-x: auto; }
+
+/* ---- 图例 ---- */
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin: 6px 0 10px; font-size: 12px; color: var(--ink-secondary); }
+.legend .key { display: inline-flex; align-items: center; gap: 6px; }
+.legend .swatch { width: 12px; height: 12px; border-radius: 3px; }
+.legend .shape-key { display: inline-block; }
+
+/* ---- 提示横幅 ---- */
+.notice {
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin: 10px 0;
+  border: 1px solid var(--border);
+}
+.notice.info { background: var(--accent-soft); color: var(--ink-primary); }
+.notice.warning { background: rgba(237, 161, 0, 0.12); }
+.notice.error { background: rgba(192, 57, 43, 0.10); }
+.notice strong { font-weight: 650; }
+
+/* ---- 成对比较 ---- */
+.pair-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.pair-header h3 { margin: 0; font-size: 15px; }
+.pair-distance { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.diverging { width: 100%; }
+.diverging-header { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-muted); margin-bottom: 6px; }
+.diverging-row { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: center; margin-bottom: 6px; }
+.diverging-label { font-size: 12px; color: var(--ink-secondary); text-align: right; }
+.diverging-track { position: relative; height: 22px; background: var(--surface-2); border-radius: 6px; cursor: default; }
+.diverging-zero { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--axis); }
+.diverging-bar { position: absolute; top: 0; bottom: 0; border-radius: 4px; min-width: 2px; }
+.diverging-value {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  font-size: 11px; color: var(--ink-secondary); font-variant-numeric: tabular-nums;
+  white-space: nowrap; width: 64px; pointer-events: none;
+}
+
+/* ---- 成分构成段条 ---- */
+.comp-bar { display: flex; height: 12px; border-radius: 999px; overflow: hidden; gap: 2px; background: var(--surface-1); }
+.comp-seg { height: 100%; min-width: 2px; cursor: default; }
+.comp-seg:first-child { border-radius: 999px 0 0 999px; }
+.comp-seg:last-child { border-radius: 0 999px 999px 0; }
+
+/* ---- 提示浮层 ---- */
+.chart-tooltip {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  padding: 8px 11px;
+  font-size: 12px;
+  max-width: 280px;
+}
+.chart-tooltip .tip-title { font-weight: 650; margin-bottom: 3px; color: var(--ink-primary); }
+.chart-tooltip .tip-row { color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
+
+/* ---- 稳定性 ---- */
+table.stab { font-size: 12px; }
+table.stab td, table.stab th { text-align: center; }
+.mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+.empty-note { color: var(--ink-muted); font-size: 13px; }
+.footer-note { color: var(--ink-muted); font-size: 12px; margin-top: 24px; line-height: 1.7; }
+button.text-btn {
+  border: 0; background: none; color: var(--accent);
+  cursor: pointer; font: inherit; padding: 0; text-decoration: underline;
+}
+.k-select { width: auto; }
+hr.soft { border: 0; border-top: 1px solid var(--grid); margin: 16px 0; }

@@ -1,0 +1,15 @@
+{
+  "name": "mineral-compositional-analysis",
+  "version": "1.0.0",
+  "description": "矿物样品成分分析页：对数比距离、零值分类处理、支持集合分组",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/math.test.js test/analysis.test.js",
+    "test:dom": "node --test test/dom.smoke.test.js",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "jsdom": "^31.0.0"
+  }
+}
